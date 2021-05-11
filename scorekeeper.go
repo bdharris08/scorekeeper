@@ -6,13 +6,33 @@ import (
 	"strings"
 )
 
-type ScoreKeeper struct{}
+// ScoreKeeper keeps scores using some store.
+// It is the top level object for the ScoreKeeper library.
+type ScoreKeeper struct {
+	store ScoreStore
+}
 
-type Score struct {
+// ScoreStore stores scores for ScoreKeeper.
+// It could be in memory or backed by a database.
+type ScoreStore interface {
+	Store() error
+}
+
+// Score is kept by ScoreKeeper and tracks something.
+// We will only have one kind of Score for this project,
+// but through this interface we could extend to other kinds easily
+type Score interface {
+	Read(s string) error
+}
+
+// Trial is a kind of Score. It is a timed action.
+type Trial struct {
 	Action string `json:"action"`
-	// Since the time units weren't specified, let's assume ms for reasonable precise human-scale time measurements.
-	// Max uint64 is 18446744073709551615, or rougly 500 million years, which seems like plenty of time to jump.
-	// We only need an int to store this data, but I don't know the edginess the edge cases that will be used in testing.
+	// Since the "time" units weren't specified, let's assume ms as a reasonably precise
+	// human-scale time measurement. Max uint64 is 18446744073709551615,
+	// or rougly 500 million years, which seems like plenty of time to jump.
+	// We only need an int to store this data, but I don't know the edginess of the edge cases
+	// that will be used in testing.
 	Time uint64 `json:"time"`
 }
 
@@ -24,7 +44,8 @@ var (
 	ErrBadInput  = errors.New("bad input")
 )
 
-func (s *Score) Read(action string) error {
+// Read a json-encoded string into a Trial struct
+func (s *Trial) Read(action string) error {
 	if action == "" {
 		return ErrNoInput
 	}
@@ -54,11 +75,13 @@ func (s *Score) Read(action string) error {
 	return nil
 }
 
+// AddAction takes a json-encoded string and keeps it for later
 func (sk *ScoreKeeper) AddAction(action string) error {
-	var s Score
+	var s Trial
 	return s.Read(action)
 }
 
+// GetStats computes some statistics about the actions stored in the ScoreKeeper
 func (s *ScoreKeeper) GetStats() string {
 	return ""
 }
