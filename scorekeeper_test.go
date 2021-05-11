@@ -46,7 +46,7 @@ func TestAddActionErrors(t *testing.T) {
 		{
 			name:   "empty action",
 			action: `{"action":"", "time":1}`,
-			err:    ErrBadInput,
+			err:    ErrBadAction,
 		},
 		{
 			name:   "missing time",
@@ -56,7 +56,7 @@ func TestAddActionErrors(t *testing.T) {
 		{
 			name:   "missing action",
 			action: `{"time":1}`,
-			err:    ErrBadInput,
+			err:    ErrBadAction,
 		},
 		{
 			name:   "missing both",
