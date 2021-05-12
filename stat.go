@@ -12,7 +12,8 @@ type Stat interface {
 	// Compute generates the statistic on a set of scores immediately.
 	Compute(ss []Score) (string, error)
 	// Step takes a score and, if possible, includes it in the running computation
-	// For example, Average.Step() will add a score to the running average
+	// For example, Average.Step() will add a score to the running total
+	// We won't need this for Average really, but it could be useful in other types of computations
 	Step(s Score) error
 	// Report returns the result of the running computation.
 	Report() (string, error)
