@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestAddAction(t *testing.T) {
+func TestAddActionErrors(t *testing.T) {
 	type testCase struct {
 		name   string
 		action string
@@ -27,7 +27,7 @@ func TestAddAction(t *testing.T) {
 		{
 			name:   "negative",
 			action: `{"action":"levitate", "time":-1}`,
-			err:    ErrOutOfBounds,
+			err:    ErrBadTime,
 		},
 		{
 			name:   "huge",
@@ -36,32 +36,32 @@ func TestAddAction(t *testing.T) {
 		{
 			name:   "too huge",
 			action: `{"action":"jump", "time":18446744073709551616}`,
-			err:    ErrOutOfBounds,
+			err:    ErrBadTime,
 		},
 		{
 			name:   "NaN",
 			action: `{"action":"jump", "time":"1s"}`,
-			err:    ErrBadInput,
+			err:    ErrBadTime,
 		},
 		{
 			name:   "empty action",
 			action: `{"action":"", "time":1}`,
-			err:    ErrBadInput,
+			err:    ErrBadAction,
 		},
 		{
 			name:   "missing time",
 			action: `{"action":"exist"}`,
-			err:    ErrBadInput,
+			err:    ErrNoTime,
 		},
 		{
 			name:   "missing action",
 			action: `{"time":1}`,
-			err:    ErrBadInput,
+			err:    ErrBadAction,
 		},
 		{
 			name:   "missing both",
 			action: `{}`,
-			err:    ErrBadInput,
+			err:    ErrNoTime,
 		},
 	}
 
@@ -132,7 +132,7 @@ func TestGetStats(t *testing.T) {
 				`{"action":"sink", "time":-100}`,
 			},
 			stats: `[]`,
-			errs:  []error{ErrOutOfBounds},
+			errs:  []error{ErrBadTime},
 		},
 		{
 			name: "robust",
@@ -147,7 +147,7 @@ func TestGetStats(t *testing.T) {
 				{"action":"jump", "avg":150},
 				{"action":"run", "avg":75}
 			]`,
-			errs: []error{ErrOutOfBounds, ErrBadInput, nil, nil, nil},
+			errs: []error{ErrBadTime, ErrBadInput, nil, nil, nil},
 		},
 	}
 
