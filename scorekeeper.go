@@ -7,16 +7,6 @@ type ScoreKeeper struct {
 	s ScoreStore
 }
 
-// Score is kept by ScoreKeeper and tracks something.
-// We will only have one kind of Score for this project,
-// but through this interface we could extend to other kinds easily
-type Score interface {
-	// Generate a unique identifier for later organization.
-	Name() string
-	// Read a json-encoded string into the Score struct.
-	Read(s string) error
-}
-
 // Keep a Score in the ScoreStore, using a memory store if none was specified.
 func (sk *ScoreKeeper) Keep(score Score) error {
 	if sk.s == nil {
