@@ -10,11 +10,12 @@ import (
 type Trial struct {
 	Action string `json:"action"`
 	// Since the "time" units weren't specified, let's assume ms as a reasonably precise
-	// human-scale time measurement. Max uint64 is 18446744073709551615,
-	// or rougly 500 million years, which seems like plenty of time to jump.
+	// human-scale time measurement. Max int64 is 9223372036854775807,
+	// or rougly 300 million years, which seems like plenty of time to jump.
 	// We only need an int to store this data, but I don't know the edginess of the edge cases
 	// that will be used in testing.
-	Time uint64 `json:"time"`
+	// Even though time can't be negative, we'll use int64 to avoid a loss of precision
+	Time int64 `json:"time"`
 }
 
 var (
@@ -25,8 +26,14 @@ var (
 	ErrBadInput  = errors.New("bad input")
 )
 
+// Name returns the trial's action
 func (t *Trial) Name() string {
 	return t.Action
+}
+
+// Value returns the trial's time
+func (t *Trial) Value() interface{} {
+	return t.Time
 }
 
 // Read a json-encoded string into the Trial struct.
