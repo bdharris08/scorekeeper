@@ -18,6 +18,9 @@ type ScoreStore interface {
 // We will only have one kind of Score for this project,
 // but through this interface we could extend to other kinds easily
 type Score interface {
+	// Generate a unique identifier for later organization.
+	Name() string
+	// Read a json-encoded string into the Score struct.
 	Read(s string) error
 }
 
