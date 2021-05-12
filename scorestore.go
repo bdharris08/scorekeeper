@@ -2,6 +2,13 @@ package scorekeeper
 
 import "errors"
 
+// ScoreStore stores scores for ScoreKeeper.
+// It could be in memory or backed by a database.
+type ScoreStore interface {
+	Store(s Score) error
+	Retrieve(name string) ([]Score, error)
+}
+
 // MemoryStore keeps scores in memory.
 // It will be used if no other store is provided.
 // Organize scores in labeled lists.

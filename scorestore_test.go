@@ -2,23 +2,7 @@ package scorekeeper
 
 import "testing"
 
-// TestScore is a simple score for testing the Store.
-type TestScore struct {
-	name  string
-	value int
-}
-
-// Name the test score.
-func (t *TestScore) Name() string {
-	return t.name
-}
-
-// Read nothing, nowhere.
-func (t *TestScore) Read(action string) error {
-	return nil
-}
-
-func TestSimple(t *testing.T) {
+func TestMemoryStoreSimple(t *testing.T) {
 	ms := MemoryStore{
 		s: map[string][]Score{},
 	}
@@ -41,6 +25,6 @@ func TestSimple(t *testing.T) {
 	}
 }
 
-func TestRetrieve(t *testing.T) {
+func TestMemoryStoreRetrieve(t *testing.T) {
 	// TODO
 }

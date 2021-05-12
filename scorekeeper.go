@@ -7,13 +7,6 @@ type ScoreKeeper struct {
 	s ScoreStore
 }
 
-// ScoreStore stores scores for ScoreKeeper.
-// It could be in memory or backed by a database.
-type ScoreStore interface {
-	Store(s Score) error
-	Retrieve(name string) ([]Score, error)
-}
-
 // Score is kept by ScoreKeeper and tracks something.
 // We will only have one kind of Score for this project,
 // but through this interface we could extend to other kinds easily
