@@ -7,6 +7,7 @@ import "errors"
 type ScoreStore interface {
 	Store(s Score) error
 	Retrieve(name string) ([]Score, error)
+	Names() []string
 }
 
 // MemoryStore keeps scores in memory.
@@ -41,4 +42,15 @@ func (ms *MemoryStore) Retrieve(name string) ([]Score, error) {
 	}
 
 	return scores, nil
+}
+
+// Names returns the score category names currently stored
+func (ms *MemoryStore) Names() []string {
+	names := make([]string, 0, len(ms.s))
+
+	for name := range ms.s {
+		names = append(names, name)
+	}
+
+	return names
 }
