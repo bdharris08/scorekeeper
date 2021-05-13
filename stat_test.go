@@ -9,7 +9,7 @@ func TestAverage(t *testing.T) {
 		name string
 		ss   []Score
 		errs []error
-		res  string
+		res  float64
 		err  error
 	}
 
@@ -21,13 +21,12 @@ func TestAverage(t *testing.T) {
 				&TestScore{value: int64(200)},
 			},
 			errs: []error{nil, nil},
-			res:  "150",
+			res:  float64(150),
 		},
 		{
 			name: "empty",
 			ss:   []Score{},
 			errs: []error{},
-			res:  "",
 			err:  ErrNoData,
 		},
 		{
@@ -37,7 +36,7 @@ func TestAverage(t *testing.T) {
 				&TestScore{name: "jump", value: int64(200)},
 			},
 			errs: []error{nil, nil},
-			res:  "100",
+			res:  float64(100),
 		},
 		{
 			name: "one",
@@ -45,7 +44,7 @@ func TestAverage(t *testing.T) {
 				&TestScore{name: "jump", value: int64(1)},
 			},
 			errs: []error{nil},
-			res:  "1",
+			res:  float64(1),
 		},
 		{
 			// Presumably not possible for Trial but just in case
@@ -55,7 +54,7 @@ func TestAverage(t *testing.T) {
 				&TestScore{name: "jump", value: int64(200)},
 			},
 			errs: []error{nil, nil},
-			res:  "0",
+			res:  float64(0),
 		},
 		{
 			name: "duplicate",
@@ -64,7 +63,7 @@ func TestAverage(t *testing.T) {
 				&TestScore{name: "jump", value: int64(100)},
 			},
 			errs: []error{nil, nil},
-			res:  "100",
+			res:  float64(100),
 		},
 		{
 			name: "floating",
@@ -73,7 +72,7 @@ func TestAverage(t *testing.T) {
 				&TestScore{name: "jump", value: int64(100)},
 			},
 			errs: []error{nil, nil},
-			res:  "100.5",
+			res:  float64(100.5),
 		},
 		{
 			name: "repeating of course",
@@ -83,7 +82,7 @@ func TestAverage(t *testing.T) {
 				&TestScore{name: "jump", value: int64(5)},
 			},
 			errs: []error{nil, nil, nil},
-			res:  "3.3333333333333335",
+			res:  float64(3.3333333333333335),
 		},
 	}
 
@@ -101,7 +100,7 @@ func TestAverage(t *testing.T) {
 			t.Errorf("[%s] Expected error to be '%v' but got '%v'", tc.name, expected, got)
 		}
 		if expected, got := tc.res, res; expected != got {
-			t.Errorf("[%s] Expected %s but got %s", tc.name, expected, got)
+			t.Errorf("[%s] Expected %f but got %f", tc.name, expected, got)
 		}
 
 		res2, err := a.Compute(tc.ss)
@@ -109,12 +108,12 @@ func TestAverage(t *testing.T) {
 			t.Errorf("[%s] Compute: Expected error to be '%v' but got '%v'", tc.name, expected, got)
 		}
 		if expected, got := tc.res, res2; expected != got {
-			t.Errorf("[%s] Compute: Expected %s but got %s", tc.name, expected, got)
+			t.Errorf("[%s] Compute: Expected %f but got %f", tc.name, expected, got)
 		}
 
 		// sanity check
 		if res != res2 {
-			t.Errorf("[%s] results didn't match: running: %s, computed: %s", tc.name, res, res2)
+			t.Errorf("[%s] results didn't match: running: %f, computed: %f", tc.name, res, res2)
 		}
 	}
 }
