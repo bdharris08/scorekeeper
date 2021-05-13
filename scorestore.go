@@ -6,8 +6,7 @@ import "errors"
 // It could be in memory or backed by a database.
 type ScoreStore interface {
 	Store(s Score) error
-	Retrieve(name string) ([]Score, error)
-	Names() []string
+	Retrieve() (map[string][]Score, error)
 }
 
 // MemoryStore keeps scores in memory.
@@ -31,17 +30,12 @@ func (ms *MemoryStore) Store(s Score) error {
 var ErrNoScores = errors.New("no scores found")
 
 // Retrieve Scores from memory by name.
-func (ms *MemoryStore) Retrieve(name string) ([]Score, error) {
+func (ms *MemoryStore) Retrieve() (map[string][]Score, error) {
 	if ms.s == nil {
 		return nil, ErrNoScores
 	}
 
-	scores, ok := ms.s[name]
-	if !ok {
-		return nil, ErrNoScores
-	}
-
-	return scores, nil
+	return ms.s, nil
 }
 
 // Names returns the score category names currently stored

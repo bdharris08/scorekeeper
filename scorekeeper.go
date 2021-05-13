@@ -54,17 +54,15 @@ func (sk *ScoreKeeper) get() ([]AverageTime, error) {
 		return nil, ErrNoData
 	}
 
-	names := sk.s.Names()
+	scoreMap, err := sk.s.Retrieve()
+	if err != nil {
+		return nil, err
+	}
 
-	avgs := make([]AverageTime, 0, len(names))
+	avgs := make([]AverageTime, 0, len(scoreMap))
 
-	for _, n := range names {
+	for name, scores := range scoreMap {
 		a := Average{}
-
-		scores, err := sk.s.Retrieve(n)
-		if err != nil {
-			return nil, err
-		}
 
 		res, err := a.Compute(scores)
 		if err != nil {
@@ -77,7 +75,7 @@ func (sk *ScoreKeeper) get() ([]AverageTime, error) {
 		}
 
 		avgs = append(avgs, AverageTime{
-			Action:  n,
+			Action:  name,
 			Average: avg,
 		})
 	}
