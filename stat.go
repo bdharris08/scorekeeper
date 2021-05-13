@@ -24,7 +24,7 @@ type Average struct {
 	s float64
 }
 
-var ErrTypeInvalid = errors.New("score value is invalid")
+var ErrTypeInvalid = errors.New("invalid type")
 var ErrNoData = errors.New("no data to report")
 
 // Compute a floating point average from a list of scores with int64 values.

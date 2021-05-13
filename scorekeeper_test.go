@@ -80,6 +80,7 @@ func TestGetStats(t *testing.T) {
 		actions []string
 		stats   string
 		errs    []error
+		err     error
 	}
 	testCases := []testCase{
 		{
@@ -89,27 +90,22 @@ func TestGetStats(t *testing.T) {
 				`{"action":"run", "time":75}`,
 				`{"action":"jump", "time":200}`,
 			},
-			stats: `[
-				{"action":"jump", "avg":150},
-				{"action":"run", "avg":75}
-			]`,
-			errs: []error{nil, nil, nil},
+			stats: `[{"action":"jump","avg":150},{"action":"run","avg":75}]`,
+			errs:  []error{nil, nil, nil},
 		},
 		{
 			name:    "empty",
 			actions: []string{},
-			stats:   `[]`,
 			errs:    []error{},
+			err:     ErrNoData,
 		},
 		{
 			name: "zero",
 			actions: []string{
 				`{"action":"stand", "time":0}`,
 			},
-			stats: `[
-				{"action":"stand", "avg":0}
-			]`,
-			errs: []error{nil},
+			stats: `[{"action":"stand","avg":0}]`,
+			errs:  []error{nil},
 		},
 		{
 			name: "unique",
@@ -118,20 +114,16 @@ func TestGetStats(t *testing.T) {
 				`{"action":"skip", "time":2}`,
 				`{"action":"jump", "time":3}`,
 			},
-			stats: `[
-				{"action":"hop", "time":1},
-            	{"action":"skip", "time":2},
-            	{"action":"jump", "time":3}
-			]`,
-			errs: []error{nil, nil, nil},
+			stats: `[{"action":"hop","avg":1},{"action":"skip","avg":2},{"action":"jump","avg":3}]`,
+			errs:  []error{nil, nil, nil},
 		},
 		{
 			name: "negative",
 			actions: []string{
-				`{"action":"sink", "time":-100}`,
+				`{"action":"sink","time":-100}`,
 			},
-			stats: `[]`,
-			errs:  []error{ErrBadTime},
+			stats: `[{"action":"sink","avg":-100}]`,
+			errs:  []error{nil},
 		},
 		{
 			name: "robust",
@@ -142,11 +134,8 @@ func TestGetStats(t *testing.T) {
 				`{"action":"run", "time":75}`,
 				`{"action":"jump", "time":200}`,
 			},
-			stats: `[
-				{"action":"jump", "avg":150},
-				{"action":"run", "avg":75}
-			]`,
-			errs: []error{ErrBadTime, ErrBadInput, nil, nil, nil},
+			stats: `[{"action":"sink","avg":-100},{"action":"jump","avg":150},{"action":"run","avg":75}]`,
+			errs:  []error{nil, ErrNoTime, nil, nil, nil},
 		},
 	}
 
@@ -161,7 +150,12 @@ func TestGetStats(t *testing.T) {
 			}
 		}
 
-		if expected, got := tc.stats, s.GetStats(); expected != got {
+		stats, err := s.GetStats()
+		if expected, got := tc.err, err; expected != got {
+			t.Errorf("[%s] Expected GetStats err to be '%v' but got '%v'", tc.name, expected, got)
+		}
+
+		if expected, got := tc.stats, stats; expected != got {
 			t.Errorf("[%s] Expected stats to be '%s' but got '%s'", tc.name, expected, got)
 		}
 	}
