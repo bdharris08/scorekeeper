@@ -17,8 +17,8 @@ func TestAverage(t *testing.T) {
 		{
 			name: "provided",
 			ss: []Score{
-				&TestScore{value: int64(100)},
-				&TestScore{value: int64(200)},
+				&TestScore{value: float64(100)},
+				&TestScore{value: float64(200)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(150),
@@ -32,8 +32,8 @@ func TestAverage(t *testing.T) {
 		{
 			name: "zero",
 			ss: []Score{
-				&TestScore{name: "jump", value: int64(0)},
-				&TestScore{name: "jump", value: int64(200)},
+				&TestScore{name: "jump", value: float64(0)},
+				&TestScore{name: "jump", value: float64(200)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(100),
@@ -41,7 +41,7 @@ func TestAverage(t *testing.T) {
 		{
 			name: "one",
 			ss: []Score{
-				&TestScore{name: "jump", value: int64(1)},
+				&TestScore{name: "jump", value: float64(1)},
 			},
 			errs: []error{nil},
 			res:  float64(1),
@@ -50,8 +50,8 @@ func TestAverage(t *testing.T) {
 			// Presumably not possible for Trial but just in case
 			name: "negative",
 			ss: []Score{
-				&TestScore{name: "jump", value: int64(-200)},
-				&TestScore{name: "jump", value: int64(200)},
+				&TestScore{name: "jump", value: float64(-200)},
+				&TestScore{name: "jump", value: float64(200)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(0),
@@ -59,8 +59,8 @@ func TestAverage(t *testing.T) {
 		{
 			name: "duplicate",
 			ss: []Score{
-				&TestScore{name: "jump", value: int64(100)},
-				&TestScore{name: "jump", value: int64(100)},
+				&TestScore{name: "jump", value: float64(100)},
+				&TestScore{name: "jump", value: float64(100)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(100),
@@ -68,8 +68,8 @@ func TestAverage(t *testing.T) {
 		{
 			name: "floating",
 			ss: []Score{
-				&TestScore{name: "jump", value: int64(101)},
-				&TestScore{name: "jump", value: int64(100)},
+				&TestScore{name: "jump", value: float64(101)},
+				&TestScore{name: "jump", value: float64(100)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(100.5),
@@ -77,9 +77,9 @@ func TestAverage(t *testing.T) {
 		{
 			name: "repeating of course",
 			ss: []Score{
-				&TestScore{name: "jump", value: int64(2)},
-				&TestScore{name: "jump", value: int64(3)},
-				&TestScore{name: "jump", value: int64(5)},
+				&TestScore{name: "jump", value: float64(2)},
+				&TestScore{name: "jump", value: float64(3)},
+				&TestScore{name: "jump", value: float64(5)},
 			},
 			errs: []error{nil, nil, nil},
 			res:  float64(3.3333333333333335),

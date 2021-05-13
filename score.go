@@ -22,7 +22,7 @@ type Score interface {
 // TestScore is a simple score for testing.
 type TestScore struct {
 	name  string
-	value int64
+	value float64
 }
 
 // Name the test score.
@@ -43,13 +43,12 @@ func (t *TestScore) Value() interface{} {
 // Trial is a kind of Score. It is a timed action.
 type Trial struct {
 	Action string `json:"action"`
-	// Since the "time" units weren't specified, let's assume ms as a reasonably precise
-	// human-scale time measurement. Max int64 is 9223372036854775807,
-	// or rougly 300 million years, which seems like plenty of time to jump.
+	// Since the "time" units weren't specified, let's assume milliseconds as a reasonably precise
+	// human-scale time measurement. Max float64 is 1.7976931348623157e+308,
+	// or rougly 5.700447535712569×10^297 years, which seems like plenty of time to jump.
 	// We only need an int to store this data, but I don't know the edginess of the edge cases
 	// that will be used in testing.
-	// Even though time can't be negative, we'll use int64 to avoid a loss of precision
-	Time int64 `json:"time"`
+	Time float64 `json:"time"`
 }
 
 // AverageTime will be used to report an average time

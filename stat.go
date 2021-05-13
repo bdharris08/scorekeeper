@@ -18,7 +18,7 @@ type Stat interface {
 	Report() (interface{}, error)
 }
 
-// Average is a Stat that computes an average of scores with int64 values.
+// Average is a Stat that computes an average of scores with float64 values.
 type Average struct {
 	n float64
 	s float64
@@ -27,7 +27,7 @@ type Average struct {
 var ErrTypeInvalid = errors.New("invalid type")
 var ErrNoData = errors.New("no data to report")
 
-// Compute a floating point average from a list of scores with int64 values.
+// Compute a floating point average from a list of scores with float64 values.
 func (a *Average) Compute(ss []Score) (interface{}, error) {
 	var (
 		sum float64
@@ -35,7 +35,7 @@ func (a *Average) Compute(ss []Score) (interface{}, error) {
 	)
 
 	for _, s := range ss {
-		v, ok := s.Value().(int64)
+		v, ok := s.Value().(float64)
 		if !ok {
 			return float64(0), ErrTypeInvalid
 		}
@@ -54,12 +54,12 @@ func (a *Average) Compute(ss []Score) (interface{}, error) {
 
 // Step adds a score to the running sum.
 func (a *Average) Step(s Score) error {
-	v, ok := s.Value().(int64)
+	v, ok := s.Value().(float64)
 	if !ok {
 		return ErrTypeInvalid
 	}
 
-	a.s += float64(v)
+	a.s += v
 	a.n++
 	return nil
 }

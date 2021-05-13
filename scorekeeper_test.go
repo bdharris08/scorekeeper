@@ -33,11 +33,6 @@ func TestAddActionErrors(t *testing.T) {
 			action: `{"action":"jump", "time":9223372036854775807}`,
 		},
 		{
-			name:   "too huge",
-			action: `{"action":"jump", "time":18446744073709551616}`,
-			err:    ErrBadTime,
-		},
-		{
 			name:   "NaN",
 			action: `{"action":"jump", "time":"1s"}`,
 			err:    ErrBadTime,
