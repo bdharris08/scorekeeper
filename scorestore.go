@@ -2,6 +2,13 @@ package scorekeeper
 
 import "errors"
 
+// ScoreStore stores scores for ScoreKeeper.
+// It could be in memory or backed by a database.
+type ScoreStore interface {
+	Store(s Score) error
+	Retrieve() (map[string][]Score, error)
+}
+
 // MemoryStore keeps scores in memory.
 // It will be used if no other store is provided.
 // Organize scores in labeled lists.
@@ -23,15 +30,21 @@ func (ms *MemoryStore) Store(s Score) error {
 var ErrNoScores = errors.New("no scores found")
 
 // Retrieve Scores from memory by name.
-func (ms *MemoryStore) Retrieve(name string) ([]Score, error) {
+func (ms *MemoryStore) Retrieve() (map[string][]Score, error) {
 	if ms.s == nil {
 		return nil, ErrNoScores
 	}
 
-	scores, ok := ms.s[name]
-	if !ok {
-		return nil, ErrNoScores
+	return ms.s, nil
+}
+
+// Names returns the score category names currently stored
+func (ms *MemoryStore) Names() []string {
+	names := make([]string, 0, len(ms.s))
+
+	for name := range ms.s {
+		names = append(names, name)
 	}
 
-	return scores, nil
+	return names
 }
