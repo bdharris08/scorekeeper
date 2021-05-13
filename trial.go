@@ -18,6 +18,12 @@ type Trial struct {
 	Time int64 `json:"time"`
 }
 
+// AverageTime will be used to report an average time
+type AverageTime struct {
+	Action  string  `json:"action"`
+	Average float64 `json:"avg"`
+}
+
 var (
 	ErrNoInput   = errors.New("no input provided")
 	ErrBadTime   = errors.New("invalid time")
