@@ -60,12 +60,54 @@ func TestAddActionErrors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		s := ScoreKeeper{}
+		s, err := New(&MemoryStore{map[string][]Score{}})
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		err := s.AddAction(tc.action)
+		s.Start()
+		defer s.Stop()
+
+		err = s.AddAction(tc.action)
 		if expected, got := tc.err, err; expected != got {
 			t.Errorf("[%s] Expected error to be '%v' but got '%v'", tc.name, expected, got)
 		}
+	}
+}
+
+func TestAddActionConcurrent(t *testing.T) {
+	s, err := New(&MemoryStore{map[string][]Score{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.Start()
+	defer s.Stop()
+
+	actions := []string{
+		`{"action":"hop", "time":100}`,
+		`{"action":"skip", "time":100}`,
+		`{"action":"jump", "time":100}`,
+		`{"action":"trip", "time":100}`,
+		`{"action":"fall", "time":100}`,
+		`{"action":"lay", "time":1000}`,
+		`{"action":"curse", "time":100}`,
+		`{"action":"stand", "time":100}`,
+		`{"action":"walk", "time":100}`,
+		`{"action":"run", "time":100}`,
+		`{"action":"hop", "time":100}`,
+	}
+
+	chaos := func(actions []string) {
+		for _, a := range actions {
+			if err := s.AddAction(a); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+
+	for i := 0; i < 10; i++ {
+		go chaos(actions)
 	}
 }
 
@@ -135,7 +177,12 @@ func TestGetStats(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		s := ScoreKeeper{}
+		s, err := New(&MemoryStore{map[string][]Score{}})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		s.Start()
 
 		for i, a := range tc.actions {
 			errs := make([]error, len(tc.actions))
