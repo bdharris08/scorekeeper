@@ -2,6 +2,7 @@ package scorekeeper
 
 import (
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -73,42 +74,6 @@ func TestAddActionErrors(t *testing.T) {
 		if expected, got := tc.err, err; expected != got {
 			t.Errorf("[%s] Expected error to be '%v' but got '%v'", tc.name, expected, got)
 		}
-	}
-}
-
-func TestAddActionConcurrent(t *testing.T) {
-	s, err := New(&MemoryStore{map[string][]Score{}})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	s.Start()
-	defer s.Stop()
-
-	actions := []string{
-		`{"action":"hop", "time":100}`,
-		`{"action":"skip", "time":100}`,
-		`{"action":"jump", "time":100}`,
-		`{"action":"trip", "time":100}`,
-		`{"action":"fall", "time":100}`,
-		`{"action":"lay", "time":1000}`,
-		`{"action":"curse", "time":100}`,
-		`{"action":"stand", "time":100}`,
-		`{"action":"walk", "time":100}`,
-		`{"action":"run", "time":100}`,
-		`{"action":"hop", "time":100}`,
-	}
-
-	chaos := func(actions []string) {
-		for _, a := range actions {
-			if err := s.AddAction(a); err != nil {
-				t.Error(err)
-			}
-		}
-	}
-
-	for i := 0; i < 10; i++ {
-		go chaos(actions)
 	}
 }
 
@@ -256,9 +221,15 @@ func TestStatsEquivalent(t *testing.T) {
 			e:    false,
 		},
 		{
-			name: "changed values",
+			name: "changed action",
 			a:    `[{"action":"skip","avg":1}]`,
 			b:    `[{"action":"hop","avg":1}]`,
+			e:    false,
+		},
+		{
+			name: "changed values",
+			a:    `[{"action":"skip","avg":1}]`,
+			b:    `[{"action":"skip","avg":2}]`,
 			e:    false,
 		},
 		{
@@ -279,5 +250,61 @@ func TestStatsEquivalent(t *testing.T) {
 		if expected, got := tc.e, statsEquivalent(tc.a, tc.b); expected != got {
 			t.Errorf("[%s] expected a===b to be %t but got %t", tc.name, expected, got)
 		}
+	}
+}
+
+func TestConcurrent(t *testing.T) {
+	s, err := New(&MemoryStore{map[string][]Score{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s.Start()
+	defer s.Stop()
+
+	actions := []string{
+		`{"action":"hop", "time":100}`,
+		`{"action":"skip", "time":100}`,
+		`{"action":"jump", "time":100}`,
+		`{"action":"hop", "time":200}`,
+		`{"action":"skip", "time":200}`,
+		`{"action":"jump", "time":200}`,
+		`{"action":"hop", "time":1}`,
+		`{"action":"hop", "time":1}`,
+		`{"action":"hop", "time":1}`,
+		`{"action":"skip", "time":2}`,
+		`{"action":"skip", "time":2}`,
+		`{"action":"skip", "time":2}`,
+		`{"action":"jump", "time":3}`,
+		`{"action":"jump", "time":3}`,
+		`{"action":"jump", "time":3}`,
+	}
+
+	chaos := func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		for _, a := range actions {
+			if err := s.AddAction(a); err != nil {
+				t.Error(err)
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go chaos(&wg)
+	}
+
+	wg.Wait()
+
+	e := `[{"action":"hop","avg":60.6},{"action":"skip","avg":61.2},{"action":"jump","avg":61.8}]`
+
+	res, err := s.GetStats()
+	if expected, got := error(nil), err; expected != got {
+		t.Errorf("expected error '%v' but got '%v'", expected, got)
+	}
+	if expected, got := e, res; !statsEquivalent(expected, got) {
+		t.Errorf("expected '%s' but got '%s'", expected, got)
 	}
 }
