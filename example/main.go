@@ -67,7 +67,9 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			// Do something with the result
+			// Do something with the result,
+			// this will likely be an intermediate result
+			// since not all workers will have finished
 			fmt.Println(result)
 		}()
 	}

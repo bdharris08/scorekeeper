@@ -42,56 +42,56 @@ func main() {
 #### A simple example
 ```go
 actions := []string{
-		`{"action":"hop", "time":100}`,
-		`{"action":"skip", "time":100}`,
-		`{"action":"hop", "time":100}`,
-	}
+    `{"action":"hop", "time":100}`,
+    `{"action":"skip", "time":100}`,
+    `{"action":"hop", "time":100}`,
+}
 
-	// A simple example
-	for _, a := range actions {
-		if err := scoreKeeper.AddAction(a); err != nil {
-			fmt.Println(err)
-		}
-	}
-	result, err := scoreKeeper.GetStats()
-	if err != nil {
-		fmt.Println(err)
-	}
-	// Do something with the result
-	fmt.Println(result)
+// A simple example
+for _, a := range actions {
+    if err := scoreKeeper.AddAction(a); err != nil {
+        fmt.Println(err)
+    }
+}
+result, err := scoreKeeper.GetStats()
+if err != nil {
+    fmt.Println(err)
+}
+// Do something with the result
+fmt.Println(result)
 ```
 
 #### Concurrent example
 ```go
 // You can even access the scoreKeeper concurrently!
-	var wg sync.WaitGroup
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
+var wg sync.WaitGroup
+for i := 0; i < numWorkers; i++ {
+    wg.Add(1)
 
-		go func() {
-			defer wg.Done()
-			for _, a := range actions {
-				if err := scoreKeeper.AddAction(a); err != nil {
-					fmt.Println(err)
-				}
-			}
-			result, err := scoreKeeper.GetStats()
-			if err != nil {
-				fmt.Println(err)
-			}
-			// Do something with the result, 
-            // this will likely be an intermediate result 
-            // since not all workers will have finished
-			fmt.Println(result)
-		}()
-	}
+    go func() {
+        defer wg.Done()
+        for _, a := range actions {
+            if err := scoreKeeper.AddAction(a); err != nil {
+                fmt.Println(err)
+            }
+        }
+        result, err := scoreKeeper.GetStats()
+        if err != nil {
+            fmt.Println(err)
+        }
+        // Do something with the result, 
+        // this will likely be an intermediate result 
+        // since not all workers will have finished
+        fmt.Println(result)
+    }()
+}
 
-	wg.Wait()
+wg.Wait()
 
-	result, err = scoreKeeper.GetStats()
-	if err != nil {
-		fmt.Println(err)
-	}
-	// Do something with the final result
-	fmt.Println(result)
+result, err = scoreKeeper.GetStats()
+if err != nil {
+    fmt.Println(err)
+}
+// Do something with the final result
+fmt.Println(result)
 ```
