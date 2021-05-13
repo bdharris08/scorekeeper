@@ -199,7 +199,12 @@ func TestGetStats(t *testing.T) {
 			t.Errorf("[%s] Expected GetStats err to be '%v' but got '%v'", tc.name, expected, got)
 		}
 
-		if expected, got := tc.stats, stats; expected != got {
+		// ensure it's a json array
+		if len(stats) > 0 && !(strings.HasPrefix(stats, "[") && strings.HasSuffix(stats, "]")) {
+			t.Errorf("[%s] Expected stats to be a json-encoded list of actions, got '%s'", tc.name, stats)
+		}
+
+		if expected, got := tc.stats, stats; !statsEquivalent(expected, got) {
 			t.Errorf("[%s] Expected stats to be '%s' but got '%s'", tc.name, expected, got)
 		}
 	}

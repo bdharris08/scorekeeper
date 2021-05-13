@@ -14,6 +14,9 @@ type ScoreKeeper struct {
 	// Constrain scores channel to only receive, ensuring only the worker reads.
 	// errors can be returned by the included channel, like an addressed envelope in an envelope.
 	scores chan<- scoreEnvelope
+	// Requests chan will be used by clients (through GetStats) to request stats from the worker.
+	// Constrain requests channel to only receive, ensuring only the worker reads.
+	requests chan<- chan result
 	// close(exit) to stop the worker.
 	quit chan bool
 }
@@ -35,7 +38,7 @@ func New(store ScoreStore) (*ScoreKeeper, error) {
 // Start a worker routine to listen on the scores channel.
 func (sk *ScoreKeeper) Start() {
 	sk.quit = make(chan bool)
-	sk.scores = sk.work()
+	sk.scores, sk.requests = sk.work()
 }
 
 var ErrNotRunning = errors.New("scorekeeper not running. Use Start()")
@@ -49,15 +52,22 @@ func (sk *ScoreKeeper) Stop() error {
 	return ErrNotRunning
 }
 
-// scoreEnvelope allows the caller to receive an error from the worker
+// result stats from the scorekeeper, or an error
+type result struct {
+	result string
+	err    error
+}
+
+// scoreEnvelope allows the caller to send a Score and receive an error from the worker
 type scoreEnvelope struct {
 	score Score
 	err   chan error
 }
 
 // work on new scores sent from AddAction.
-func (sk *ScoreKeeper) work() chan<- Score {
+func (sk *ScoreKeeper) work() (chan<- scoreEnvelope, chan<- chan result) {
 	scores := make(chan scoreEnvelope)
+	requests := make(chan chan result)
 	go func() {
 		for {
 			select {
@@ -68,13 +78,19 @@ func (sk *ScoreKeeper) work() chan<- Score {
 				err := sk.s.Store(s.score)
 				s.err <- err
 
+			case r := <-requests:
+				res, err := sk.get()
+				r <- result{
+					result: res,
+					err:    err,
 				}
+
 			default:
 				// loop until quit
 			}
 		}
 	}()
-	return scores
+	return scores, requests
 }
 
 var ErrNoKeeper = errors.New("scorekeeper uninitialized. Use New()")
@@ -93,8 +109,14 @@ func (sk *ScoreKeeper) AddAction(action string) error {
 		return err
 	}
 
-	sk.scores <- &s
-	return nil
+	errCh := make(chan error)
+	sk.scores <- scoreEnvelope{
+		score: &s,
+		err:   errCh,
+	}
+	err := <-errCh
+
+	return err
 }
 
 // GetStats computes some statistics about the actions stored in the ScoreKeeper.
@@ -107,32 +129,27 @@ func (sk *ScoreKeeper) GetStats() (string, error) {
 		return "", ErrNotRunning
 	}
 
-	avgs, err := sk.get()
-	if err != nil {
-		return "", err
-	}
+	// pass a channel to the worker and wait for it to return the result
+	request := make(chan result)
+	sk.requests <- request
+	res := <-request
 
-	b, err := json.Marshal(avgs)
-	if err != nil {
-		return "", err
-	}
-
-	return string(b), nil
+	return res.result, res.err
 }
 
-// get scores from the store and compute averages
-func (sk *ScoreKeeper) get() ([]AverageTime, error) {
+// get scores from the store and compute averages, returning a json-encoded string
+func (sk *ScoreKeeper) get() (string, error) {
 	if sk.s == nil {
-		return nil, ErrNoData
+		return "", ErrNoData
 	}
 
 	scoreMap, err := sk.s.Retrieve()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if len(scoreMap) == 0 {
-		return nil, ErrNoData
+		return "", ErrNoData
 	}
 
 	avgs := make([]AverageTime, 0, len(scoreMap))
@@ -142,12 +159,12 @@ func (sk *ScoreKeeper) get() ([]AverageTime, error) {
 
 		res, err := a.Compute(scores)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
 		avg, ok := res.(float64)
 		if !ok {
-			return nil, ErrTypeInvalid
+			return "", ErrTypeInvalid
 		}
 
 		avgs = append(avgs, AverageTime{
@@ -156,5 +173,10 @@ func (sk *ScoreKeeper) get() ([]AverageTime, error) {
 		})
 	}
 
-	return avgs, nil
+	b, err := json.Marshal(avgs)
+	if err != nil {
+		return "", err
+	}
+
+	return string(b), nil
 }
