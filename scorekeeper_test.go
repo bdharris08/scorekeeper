@@ -1,6 +1,7 @@
 package scorekeeper
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -200,6 +201,78 @@ func TestGetStats(t *testing.T) {
 
 		if expected, got := tc.stats, stats; expected != got {
 			t.Errorf("[%s] Expected stats to be '%s' but got '%s'", tc.name, expected, got)
+		}
+	}
+}
+
+func statsEquivalent(a, b string) bool {
+	// trim the outside brackets [ string ] => string
+	a, b = strings.Trim(a, "[]"), strings.Trim(b, "[]")
+
+	// split the string into a list on commas
+	al, bl := strings.Split(a, ","), strings.Split(b, ",")
+
+	if len(al) != len(bl) {
+		return false
+	}
+
+	// use a map to confirm both lists contain the same members
+	am := make(map[string]bool, len(al))
+	for _, s := range al {
+		am[s] = true
+	}
+
+	for _, s := range bl {
+		if present := am[s]; !present {
+			return false
+		}
+	}
+
+	return true
+}
+
+func TestStatsEquivalent(t *testing.T) {
+	type testCase struct {
+		name string
+		a, b string
+		e    bool
+	}
+	testCases := []testCase{
+		{
+			name: "one",
+			a:    `[{"action":"hop","avg":1}]`,
+			b:    `[{"action":"hop","avg":1}]`,
+			e:    true,
+		},
+		{
+			name: "def not",
+			a:    `[]`,
+			b:    `[{"action":"hop","avg":1}]`,
+			e:    false,
+		},
+		{
+			name: "changed values",
+			a:    `[{"action":"skip","avg":1}]`,
+			b:    `[{"action":"hop","avg":1}]`,
+			e:    false,
+		},
+		{
+			name: "different lengths",
+			a:    `[{"action":"skip","avg":1}, {"action":"hop","avg":1}]`,
+			b:    `[{"action":"hop","avg":1}]`,
+			e:    false,
+		},
+		{
+			name: "three",
+			a:    `[{"action":"hop","avg":1},{"action":"skip","avg":2},{"action":"jump","avg":3}]`,
+			b:    `[{"action":"skip","avg":2},{"action":"jump","avg":3},{"action":"hop","avg":1}]`,
+			e:    true,
+		},
+	}
+
+	for _, tc := range testCases {
+		if expected, got := tc.e, statsEquivalent(tc.a, tc.b); expected != got {
+			t.Errorf("[%s] expected a===b to be %t but got %t", tc.name, expected, got)
 		}
 	}
 }
