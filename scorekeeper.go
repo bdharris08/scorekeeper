@@ -10,8 +10,10 @@ import (
 // It fulfills the requested AddAction and GetStats methods.
 type ScoreKeeper struct {
 	s ScoreStore
-	// constrain scores channel to only receive, ensuring only the worker reads
-	scores chan<- Score
+	// Scores chan will allow clients (through AddAction) to send scores to the worker.
+	// Constrain scores channel to only receive, ensuring only the worker reads.
+	// errors can be returned by the included channel, like an addressed envelope in an envelope.
+	scores chan<- scoreEnvelope
 	// close(exit) to stop the worker.
 	quit chan bool
 }
@@ -47,17 +49,25 @@ func (sk *ScoreKeeper) Stop() error {
 	return ErrNotRunning
 }
 
+// scoreEnvelope allows the caller to receive an error from the worker
+type scoreEnvelope struct {
+	score Score
+	err   chan error
+}
+
 // work on new scores sent from AddAction.
 func (sk *ScoreKeeper) work() chan<- Score {
-	scores := make(chan Score)
+	scores := make(chan scoreEnvelope)
 	go func() {
 		for {
 			select {
 			case <-sk.quit:
 				return
+
 			case s := <-scores:
-				if err := sk.s.Store(s); err != nil {
-					panic(err) // TODO
+				err := sk.s.Store(s.score)
+				s.err <- err
+
 				}
 			default:
 				// loop until quit

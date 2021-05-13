@@ -183,6 +183,7 @@ func TestGetStats(t *testing.T) {
 		}
 
 		s.Start()
+		defer s.Stop()
 
 		for i, a := range tc.actions {
 			errs := make([]error, len(tc.actions))
