@@ -258,7 +258,7 @@ func TestStatsEquivalent(t *testing.T) {
 }
 
 func TestConcurrent(t *testing.T) {
-	s, err := New(&store.MemoryStore{map[string][]score.Score{}})
+	s, err := New(&store.MemoryStore{S: map[string][]score.Score{}})
 	if err != nil {
 		t.Fatal(err)
 	}
