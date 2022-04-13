@@ -1,13 +1,17 @@
-package scorekeeper
+package store
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/bdharris08/scorekeeper/score"
+)
 
 func TestMemoryStoreSimple(t *testing.T) {
 	ms := MemoryStore{
-		s: map[string][]Score{},
+		S: map[string][]score.Score{},
 	}
 
-	s := TestScore{
+	s := score.TestScore{
 		name:  "test",
 		value: 1,
 	}

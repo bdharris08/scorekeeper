@@ -1,13 +1,15 @@
-package scorekeeper
+package stat
 
 import (
 	"testing"
+
+	"github.com/bdharris08/scorekeeper/score"
 )
 
 func TestAverage(t *testing.T) {
 	type testCase struct {
 		name string
-		ss   []Score
+		ss   []score.Score
 		errs []error
 		res  float64
 		err  error
@@ -16,32 +18,32 @@ func TestAverage(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "provided",
-			ss: []Score{
-				&TestScore{value: float64(100)},
-				&TestScore{value: float64(200)},
+			ss: []score.Score{
+				&score.TestScore{TValue: float64(100)},
+				&score.TestScore{TValue: float64(200)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(150),
 		},
 		{
 			name: "empty",
-			ss:   []Score{},
+			ss:   []score.Score{},
 			errs: []error{},
 			err:  ErrNoData,
 		},
 		{
 			name: "zero",
-			ss: []Score{
-				&TestScore{name: "jump", value: float64(0)},
-				&TestScore{name: "jump", value: float64(200)},
+			ss: []score.Score{
+				&score.TestScore{TName: "jump", TValue: float64(0)},
+				&score.TestScore{TName: "jump", TValue: float64(200)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(100),
 		},
 		{
 			name: "one",
-			ss: []Score{
-				&TestScore{name: "jump", value: float64(1)},
+			ss: []score.Score{
+				&score.TestScore{TName: "jump", TValue: float64(1)},
 			},
 			errs: []error{nil},
 			res:  float64(1),
@@ -49,37 +51,37 @@ func TestAverage(t *testing.T) {
 		{
 			// Presumably not possible for Trial but just in case
 			name: "negative",
-			ss: []Score{
-				&TestScore{name: "jump", value: float64(-200)},
-				&TestScore{name: "jump", value: float64(200)},
+			ss: []score.Score{
+				&score.TestScore{TName: "jump", TValue: float64(-200)},
+				&score.TestScore{TName: "jump", TValue: float64(200)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(0),
 		},
 		{
 			name: "duplicate",
-			ss: []Score{
-				&TestScore{name: "jump", value: float64(100)},
-				&TestScore{name: "jump", value: float64(100)},
+			ss: []score.Score{
+				&score.TestScore{TName: "jump", TValue: float64(100)},
+				&score.TestScore{TName: "jump", TValue: float64(100)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(100),
 		},
 		{
 			name: "floating",
-			ss: []Score{
-				&TestScore{name: "jump", value: float64(101)},
-				&TestScore{name: "jump", value: float64(100)},
+			ss: []score.Score{
+				&score.TestScore{TName: "jump", TValue: float64(101)},
+				&score.TestScore{TName: "jump", TValue: float64(100)},
 			},
 			errs: []error{nil, nil},
 			res:  float64(100.5),
 		},
 		{
 			name: "repeating of course",
-			ss: []Score{
-				&TestScore{name: "jump", value: float64(2)},
-				&TestScore{name: "jump", value: float64(3)},
-				&TestScore{name: "jump", value: float64(5)},
+			ss: []score.Score{
+				&score.TestScore{TName: "jump", TValue: float64(2)},
+				&score.TestScore{TName: "jump", TValue: float64(3)},
+				&score.TestScore{TName: "jump", TValue: float64(5)},
 			},
 			errs: []error{nil, nil, nil},
 			res:  float64(3.3333333333333335),
