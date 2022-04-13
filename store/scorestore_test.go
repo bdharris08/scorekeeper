@@ -24,7 +24,7 @@ func TestMemoryStoreSimple(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if expected, got := s.TName, scores[s.TName][0].Name(); expected != got {
+	if expected, got := s.TName, scores[s.Name][0].Name(); expected != got {
 		t.Errorf("Expected %s but got %s", expected, got)
 	}
 }
