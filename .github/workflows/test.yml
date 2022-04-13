@@ -29,3 +29,20 @@ jobs:
 
       - name: Test
         run: go test -v ./... -race
+
+  tag:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create tag
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/1.0.${{ github.run_number }}',
+              sha: context.sha
+            })
