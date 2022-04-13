@@ -26,10 +26,13 @@ You could implement your own using that interface. Just pass an initialized stor
 #### Setup
 ```go
 
-import "github.com/bdharris08/scorekeeper"
+import (
+    "github.com/bdharris08/scorekeeper"
+    "github.com/bdharris08/scorekeeper/store"
+)
 
 func main() {
-    scoreKeeper, err := scorekeeper.New(&scorekeeper.MemoryStore{})
+    scoreKeeper, err := scorekeeper.New(&store.MemoryStore{})
 	if err != nil {
 		panic(fmt.Errorf("error creating scoreKeeper: %v", err))
 	}

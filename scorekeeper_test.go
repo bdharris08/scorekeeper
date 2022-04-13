@@ -4,6 +4,10 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/bdharris08/scorekeeper/score"
+	"github.com/bdharris08/scorekeeper/stat"
+	"github.com/bdharris08/scorekeeper/store"
 )
 
 func TestAddActionErrors(t *testing.T) {
@@ -24,7 +28,7 @@ func TestAddActionErrors(t *testing.T) {
 		{
 			name:   "empty",
 			action: ``,
-			err:    ErrNoInput,
+			err:    score.ErrNoInput,
 		},
 		{
 			name:   "negative",
@@ -37,32 +41,32 @@ func TestAddActionErrors(t *testing.T) {
 		{
 			name:   "NaN",
 			action: `{"action":"jump", "time":"1s"}`,
-			err:    ErrBadTime,
+			err:    score.ErrBadTime,
 		},
 		{
 			name:   "empty action",
 			action: `{"action":"", "time":1}`,
-			err:    ErrBadAction,
+			err:    score.ErrBadAction,
 		},
 		{
 			name:   "missing time",
 			action: `{"action":"exist"}`,
-			err:    ErrNoTime,
+			err:    score.ErrNoTime,
 		},
 		{
 			name:   "missing action",
 			action: `{"time":1}`,
-			err:    ErrBadAction,
+			err:    score.ErrBadAction,
 		},
 		{
 			name:   "missing both",
 			action: `{}`,
-			err:    ErrNoTime,
+			err:    score.ErrNoTime,
 		},
 	}
 
 	for _, tc := range testCases {
-		s, err := New(&MemoryStore{map[string][]Score{}})
+		s, err := New(&store.MemoryStore{S: map[string][]score.Score{}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -100,7 +104,7 @@ func TestGetStats(t *testing.T) {
 			name:    "empty",
 			actions: []string{},
 			errs:    []error{},
-			err:     ErrNoData,
+			err:     stat.ErrNoData,
 		},
 		{
 			name: "zero",
@@ -138,12 +142,12 @@ func TestGetStats(t *testing.T) {
 				`{"action":"jump", "time":200}`,
 			},
 			stats: `[{"action":"sink","avg":-100},{"action":"jump","avg":150},{"action":"run","avg":75}]`,
-			errs:  []error{nil, ErrNoTime, nil, nil, nil},
+			errs:  []error{nil, score.ErrNoTime, nil, nil, nil},
 		},
 	}
 
 	for _, tc := range testCases {
-		s, err := New(&MemoryStore{map[string][]Score{}})
+		s, err := New(&store.MemoryStore{S: map[string][]score.Score{}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -254,7 +258,7 @@ func TestStatsEquivalent(t *testing.T) {
 }
 
 func TestConcurrent(t *testing.T) {
-	s, err := New(&MemoryStore{map[string][]Score{}})
+	s, err := New(&store.MemoryStore{map[string][]score.Score{}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,13 +3,17 @@ package scorekeeper
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/bdharris08/scorekeeper/score"
+	"github.com/bdharris08/scorekeeper/stat"
+	"github.com/bdharris08/scorekeeper/store"
 )
 
 // ScoreKeeper keeps scores using some store.
 // It is the top level object for the ScoreKeeper library.
 // It fulfills the requested AddAction and GetStats methods.
 type ScoreKeeper struct {
-	s ScoreStore
+	s store.ScoreStore
 	// Scores chan will allow clients (through AddAction) to send scores to the worker.
 	// Constrain scores channel to only receive, ensuring only the worker reads.
 	// errors can be returned by the included channel, like an addressed envelope in an envelope.
@@ -23,14 +27,14 @@ type ScoreKeeper struct {
 
 // New creates and returns a ScoreKeeper with the provided ScoreStore.
 // It starts
-func New(store ScoreStore) (*ScoreKeeper, error) {
+func New(st store.ScoreStore) (*ScoreKeeper, error) {
 	sk := &ScoreKeeper{}
 
 	// default to memoryStore if none was provided
-	if store == nil {
-		store = &MemoryStore{s: map[string][]Score{}}
+	if st == nil {
+		st = &store.MemoryStore{S: map[string][]score.Score{}}
 	}
-	sk.s = store
+	sk.s = st
 
 	return sk, nil
 }
@@ -60,7 +64,7 @@ type result struct {
 
 // scoreEnvelope allows the caller to send a Score and receive an error from the worker
 type scoreEnvelope struct {
-	score Score
+	score score.Score
 	err   chan error
 }
 
@@ -104,7 +108,7 @@ func (sk *ScoreKeeper) AddAction(action string) error {
 		return ErrNotRunning
 	}
 
-	var s Trial
+	var s score.Trial
 	if err := s.Read(action); err != nil {
 		return err
 	}
@@ -140,7 +144,7 @@ func (sk *ScoreKeeper) GetStats() (string, error) {
 // get scores from the store and compute averages, returning a json-encoded string
 func (sk *ScoreKeeper) get() (string, error) {
 	if sk.s == nil {
-		return "", ErrNoData
+		return "", stat.ErrNoData
 	}
 
 	scoreMap, err := sk.s.Retrieve()
@@ -149,13 +153,13 @@ func (sk *ScoreKeeper) get() (string, error) {
 	}
 
 	if len(scoreMap) == 0 {
-		return "", ErrNoData
+		return "", stat.ErrNoData
 	}
 
-	avgs := make([]AverageTime, 0, len(scoreMap))
+	avgs := make([]score.AverageTime, 0, len(scoreMap))
 
 	for name, scores := range scoreMap {
-		a := Average{}
+		a := stat.Average{}
 
 		res, err := a.Compute(scores)
 		if err != nil {
@@ -164,10 +168,10 @@ func (sk *ScoreKeeper) get() (string, error) {
 
 		avg, ok := res.(float64)
 		if !ok {
-			return "", ErrTypeInvalid
+			return "", stat.ErrTypeInvalid
 		}
 
-		avgs = append(avgs, AverageTime{
+		avgs = append(avgs, score.AverageTime{
 			Action:  name,
 			Average: avg,
 		})

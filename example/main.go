@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/bdharris08/scorekeeper"
+	"github.com/bdharris08/scorekeeper/store"
 )
 
 var (
@@ -12,7 +13,7 @@ var (
 )
 
 func main() {
-	scoreKeeper, err := scorekeeper.New(&scorekeeper.MemoryStore{})
+	scoreKeeper, err := scorekeeper.New(&store.MemoryStore{})
 	if err != nil {
 		panic(fmt.Errorf("error creating scoreKeeper: %v", err))
 	}

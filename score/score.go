@@ -1,4 +1,4 @@
-package scorekeeper
+package score
 
 import (
 	"encoding/json"
@@ -21,13 +21,13 @@ type Score interface {
 
 // TestScore is a simple score for testing.
 type TestScore struct {
-	name  string
-	value float64
+	TName  string
+	TValue float64
 }
 
 // Name the test score.
 func (t *TestScore) Name() string {
-	return t.name
+	return t.TName
 }
 
 // Read nothing, nowhere.
@@ -37,7 +37,7 @@ func (t *TestScore) Read(action string) error {
 
 // Value returns the value of the test score.
 func (t *TestScore) Value() interface{} {
-	return t.value
+	return t.TValue
 }
 
 // Trial is a kind of Score. It is a timed action.
