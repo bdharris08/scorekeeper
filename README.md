@@ -1,6 +1,8 @@
 # ScoreKeeper
 A library for keeping score, a practice project
 
+[![test](https://github.com/bdharris08/scorekeeper/actions/workflows/test.yml/badge.svg)](https://github.com/bdharris08/scorekeeper/actions/workflows/test.yml)
+
 ### Features
 `scoreKeeper.AddAction(action string) error`
 AddAction accepts a json-encoded action string like `"{"action":"hop", "time":100}"`.
