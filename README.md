@@ -36,7 +36,7 @@ import (
 func main() {
     scoreKeeper, err := scorekeeper.New(&store.MemoryStore{})
 	if err != nil {
-		panic(fmt.Errorf("error creating scoreKeeper: %v", err))
+		panic(fmt.Errorf("error creating scoreKeeper: %w", err))
 	}
 
 	scoreKeeper.Start()
