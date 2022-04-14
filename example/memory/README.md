@@ -3,9 +3,9 @@ An example usage of ScoreKeeper
 
 ### Usage
 ```sh
-cd example
+cd example/memory
 go build
-./example
+./memory
 ```
 
 Expected output:
