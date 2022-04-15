@@ -14,12 +14,11 @@ import (
 
 var (
 	numWorkers = 5
+	dsn        = flag.String("dsn", "postgres://postgres:xxx@localhost:5432/postgres", "dsn for postgres database")
 )
 
 //TODO use cohorts to fix averages, currently just grabbing all scores for each run
 // memorystore handled that by being destroyed every run
-
-var dsn = flag.String("dsn", "postgres://postgres:xxx@localhost:5432/postgres", "dsn for postgres database")
 
 func main() {
 	flag.Parse()
@@ -31,7 +30,7 @@ func main() {
 	}
 	defer db.Close()
 
-	scoreKeeper, err := scorekeeper.New(store.NewSQLStore(db, "", ""))
+	scoreKeeper, err := scorekeeper.New(store.NewSQLStore(db, ""))
 	if err != nil {
 		panic(fmt.Errorf("error creating scoreKeeper: %v", err))
 	}

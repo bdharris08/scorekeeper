@@ -15,7 +15,6 @@ type Score interface {
 	// Read a json-encoded string into the Score struct.
 	Read(s string) error
 	// Value returns the value of the Score.
-	// By returning an empty interface, we can
 	Value() interface{}
 }
 

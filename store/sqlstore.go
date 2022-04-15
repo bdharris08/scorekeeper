@@ -28,7 +28,7 @@ type SQLStore struct {
 
 // NewSQLStore returns a new *SQLStore
 // Specify scoreTable and trialTable or use "" for defaults
-func NewSQLStore(db *sql.DB, scoreTable, trialTable string) *SQLStore {
+func NewSQLStore(db *sql.DB, trialTable string) *SQLStore {
 	s := &SQLStore{
 		DB:         db,
 		TrialTable: "trials",
@@ -59,7 +59,7 @@ func (st *SQLStore) Store(s score.Score) error {
 	_, err = st.DB.Exec(query, s.Name(), s.Value())
 	if err != nil {
 		_ = tx.Rollback()
-		return fmt.Errorf("failed to insert trial: %w", err)
+		return fmt.Errorf("failed to insert score: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -70,12 +70,24 @@ func (st *SQLStore) Store(s score.Score) error {
 }
 
 // Retrieve Scores from the database by name
+// Use `database/sql` pattern rather than talking directly to driver.
+// This should allow for swapping out drivers.
 func (st *SQLStore) Retrieve() (map[string][]score.Score, error) {
 	if err := st.CheckInit(); err != nil {
 		return nil, err
 	}
 
 	ret := map[string][]score.Score{}
+
+	/* typical database/sql pattern:
+	- query rows
+	- defer rows.Close() to avoid memory leaks if we exit before rows.Next() == false
+	- iterate with rows.Next()
+		- scan values, load them into return object
+		- sql package only natively supports largest datatypes,
+			lucky for us we are already working with float64 and strings
+	- after looping, check for errors with rows.Err()
+	*/
 
 	query := fmt.Sprintf("SELECT action, value FROM %s", st.TrialTable)
 	rows, err := st.DB.Query(query)
