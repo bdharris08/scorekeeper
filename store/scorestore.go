@@ -1,6 +1,8 @@
 package store
 
 import (
+	"errors"
+
 	"github.com/bdharris08/scorekeeper/score"
 )
 
@@ -8,5 +10,7 @@ import (
 // It could be in memory or backed by a database.
 type ScoreStore interface {
 	Store(s score.Score) error
-	Retrieve() (map[string][]score.Score, error)
+	Retrieve(f score.ScoreFactory, scoreType string) (map[string][]score.Score, error)
 }
+
+var ErrNoStore = errors.New("scoreStore uninitialized")

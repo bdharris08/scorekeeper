@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -17,10 +18,13 @@ func TestStore(t *testing.T) {
 	score := &score.TestScore{TName: "test", TValue: float64(0)}
 
 	mock.ExpectBegin()
-	mock.ExpectExec("INSERT INTO trials").WithArgs(score.Name(), score.Value()).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec("INSERT INTO test").WithArgs(score.Name(), score.Value()).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	st := NewSQLStore(db, "trials")
+	st, err := NewSQLStore(db)
+	if err != nil {
+		t.Fatalf("failed to initialize sqlstore: %v", err)
+	}
 	if err := st.Store(score); err != nil {
 		t.Fatalf("failed to store test score: %v", err)
 	}
@@ -31,6 +35,7 @@ func TestStore(t *testing.T) {
 }
 
 func TestRetrieve(t *testing.T) {
+	scoreType := "test"
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -38,13 +43,21 @@ func TestRetrieve(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{"action", "value"}).
-		AddRow("test", float64(0)).
-		AddRow("test", float64(1))
+		AddRow("a", float64(0)).
+		AddRow("a", float64(1))
 
-	mock.ExpectQuery("SELECT action, value FROM trials").WillReturnRows(rows)
+	mock.ExpectQuery(fmt.Sprintf("SELECT name, value FROM %s", scoreType)).WillReturnRows(rows)
 
-	st := NewSQLStore(db, "trials")
-	got, err := st.Retrieve()
+	st, err := NewSQLStore(db)
+	if err != nil {
+		t.Fatalf("failed to retrieve rows: %v", err)
+	}
+
+	factory := score.ScoreFactory{
+		scoreType: func() score.Score { return &score.TestScore{} },
+	}
+
+	got, err := st.Retrieve(factory, scoreType)
 	if err != nil {
 		t.Fatalf("failed to retrieve rows: %v", err)
 	}
@@ -53,9 +66,9 @@ func TestRetrieve(t *testing.T) {
 		t.Errorf("expected result to have one score")
 	}
 
-	values, ok := got["test"]
+	values, ok := got["a"]
 	if !ok {
-		t.Error("expected to find score 'test' in result")
+		t.Error("expected to find score 'a' in result")
 	}
 
 	expectedValues := map[float64]bool{
@@ -79,7 +92,7 @@ func TestRetrieve(t *testing.T) {
 		}
 	}
 
-	for k, _ := range expectedValues {
+	for k := range expectedValues {
 		if _, ok := gotMap[k]; !ok {
 			t.Errorf("expected but did not get value %f", k)
 		}
