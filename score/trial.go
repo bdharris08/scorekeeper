@@ -32,6 +32,10 @@ var (
 	ErrBadInput  = errors.New("bad input")
 )
 
+func NewTrial() Score {
+	return &Trial{}
+}
+
 // Type returns the type of Score
 func (t *Trial) Type() string {
 	return "trial"
@@ -45,6 +49,18 @@ func (t *Trial) Name() string {
 // Value returns the trial's time
 func (t *Trial) Value() interface{} {
 	return t.Time
+}
+
+// Set the value and name of the Trial
+func (t *Trial) Set(name string, value interface{}) error {
+	f, ok := value.(float64)
+	if !ok {
+		return fmt.Errorf("failed to assert value type")
+	}
+
+	t.Action = name
+	t.Time = f
+	return nil
 }
 
 // Read a json-encoded string into the Trial struct.
