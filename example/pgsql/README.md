@@ -1,6 +1,9 @@
 # Example
 An example usage of ScoreKeeper
 
+### Prerequisites
+Have a postgreSQL database running on `host` listening to `port` with a database `db_name` which is accessible by user `user` with `password`. You can also set the dsn as an env varable `DATABASE_URL`.
+
 ### Usage
 ```sh
 cd example/pgsql

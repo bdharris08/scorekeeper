@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/bdharris08/scorekeeper"
+	"github.com/bdharris08/scorekeeper/score"
 	"github.com/bdharris08/scorekeeper/store"
 )
 
@@ -13,7 +14,12 @@ var (
 )
 
 func main() {
-	scoreKeeper, err := scorekeeper.New(&store.MemoryStore{})
+	st := &store.MemoryStore{}
+	factory := score.ScoreFactory{
+		"trial": func() score.Score { return &score.Trial{} },
+	}
+
+	scoreKeeper, err := scorekeeper.New(st, factory)
 	if err != nil {
 		panic(fmt.Errorf("error creating scoreKeeper: %v", err))
 	}
@@ -41,11 +47,11 @@ func main() {
 
 	// A simple example
 	for _, a := range actions {
-		if err := scoreKeeper.AddAction(a); err != nil {
+		if err := scoreKeeper.AddAction("trial", a); err != nil {
 			fmt.Println(err)
 		}
 	}
-	result, err := scoreKeeper.GetStats()
+	result, err := scoreKeeper.GetStats("trial")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -60,11 +66,11 @@ func main() {
 		go func() {
 			defer wg.Done()
 			for _, a := range actions {
-				if err := scoreKeeper.AddAction(a); err != nil {
+				if err := scoreKeeper.AddAction("trial", a); err != nil {
 					fmt.Println(err)
 				}
 			}
-			result, err := scoreKeeper.GetStats()
+			result, err := scoreKeeper.GetStats("trial")
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -77,7 +83,7 @@ func main() {
 
 	wg.Wait()
 
-	result, err = scoreKeeper.GetStats()
+	result, err = scoreKeeper.GetStats("trial")
 	if err != nil {
 		fmt.Println(err)
 	}
