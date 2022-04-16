@@ -1,27 +1,51 @@
 package score
 
 import (
-	"encoding/json"
-	"errors"
-	"strings"
+	"fmt"
 )
 
 // Score is kept by ScoreKeeper and tracks something.
 // We will only have one kind of Score for this project (Trial),
 // but through this interface we could extend to other kinds easily
 type Score interface {
+	// Type of score, for example "trial"
+	Type() string
 	// Generate a unique identifier for later organization.
 	Name() string
 	// Read a json-encoded string into the Score struct.
 	Read(s string) error
 	// Value returns the value of the Score.
 	Value() interface{}
+	// Set the name and value of the score
+	Set(name string, value interface{}) error
+}
+
+type ScoreConstructor func() Score
+
+type ScoreFactory map[string]ScoreConstructor
+
+func Create(f ScoreFactory, scoreType string) (Score, error) {
+	constructor, ok := f[scoreType]
+	if !ok {
+		return nil, fmt.Errorf("unregistered scoreType %s", scoreType)
+	}
+
+	return constructor(), nil
 }
 
 // TestScore is a simple score for testing.
 type TestScore struct {
 	TName  string
 	TValue float64
+}
+
+func NewTestScore() Score {
+	return &TestScore{}
+}
+
+// Type returns the type of Score
+func (t *TestScore) Type() string {
+	return "test"
 }
 
 // Name the test score.
@@ -39,68 +63,14 @@ func (t *TestScore) Value() interface{} {
 	return t.TValue
 }
 
-// Trial is a kind of Score. It is a timed action.
-type Trial struct {
-	Action string `json:"action"`
-	// Since the "time" units weren't specified, let's assume milliseconds as a reasonably precise
-	// human-scale time measurement. Max float64 is 1.7976931348623157e+308,
-	// or rougly 5.700447535712569×10^297 years, which seems like plenty of time to jump.
-	// We only need an int to store this data, but I don't know the edginess of the edge cases
-	// that will be used in testing.
-	Time float64 `json:"time"`
-}
-
-// AverageTime will be used to report an average time
-type AverageTime struct {
-	Action  string  `json:"action"`
-	Average float64 `json:"avg"`
-}
-
-var (
-	ErrNoInput   = errors.New("no input provided")
-	ErrBadTime   = errors.New("invalid time")
-	ErrNoTime    = errors.New("missing time")
-	ErrBadAction = errors.New("invalid action")
-	ErrBadInput  = errors.New("bad input")
-)
-
-// Name returns the trial's action
-func (t *Trial) Name() string {
-	return t.Action
-}
-
-// Value returns the trial's time
-func (t *Trial) Value() interface{} {
-	return t.Time
-}
-
-// Read a json-encoded string into the Trial struct.
-func (t *Trial) Read(action string) error {
-	if action == "" {
-		return ErrNoInput
+// Set the value and name of the TestScore
+func (t *TestScore) Set(name string, value interface{}) error {
+	f, ok := value.(float64)
+	if !ok {
+		return fmt.Errorf("failed to assert value type")
 	}
 
-	if !strings.Contains(action, "time") {
-		return ErrNoTime
-	}
-
-	err := json.Unmarshal([]byte(action), t)
-	if err != nil {
-		if jsonErr, ok := err.(*json.UnmarshalTypeError); ok {
-			switch jsonErr.Field {
-			case "action":
-				return ErrBadAction
-			case "time":
-				return ErrBadTime
-			}
-		}
-
-		return ErrBadInput
-	}
-
-	if t.Action == "" {
-		return ErrBadAction
-	}
-
+	t.TName = name
+	t.TValue = f
 	return nil
 }

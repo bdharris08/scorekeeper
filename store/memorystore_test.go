@@ -7,12 +7,13 @@ import (
 )
 
 func TestMemoryStoreSimple(t *testing.T) {
+	scoreType := "test"
 	ms := MemoryStore{
-		S: map[string][]score.Score{},
+		S: map[string]map[string][]score.Score{},
 	}
 
 	s := score.TestScore{
-		TName:  "test",
+		TName:  scoreType,
 		TValue: 1,
 	}
 
@@ -20,7 +21,7 @@ func TestMemoryStoreSimple(t *testing.T) {
 		t.Error(err)
 	}
 
-	scores, err := ms.Retrieve()
+	scores, err := ms.Retrieve(nil, scoreType)
 	if err != nil {
 		t.Error(err)
 	}

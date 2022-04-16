@@ -11,9 +11,9 @@ import (
 /* Example Schema (postgres):
 // why bigint? https://www.cybertec-postgresql.com/en/uuid-serial-or-identity-columns-for-postgresql-auto-generated-primary-keys/
 TODO CREATE TABLE cohort
-CREATE TABLE trials (
+CREATE TABLE <scoreType> (
 	id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	action text NOT NULL,
+	name text NOT NULL,
 	value numeric NOT NULL
 );
 */
@@ -22,23 +22,17 @@ CREATE TABLE trials (
 // It uses the `database/sql` interfaces to remain driver agnostic.
 // It must be a postgres driver due to syntax differences.
 type SQLStore struct {
-	DB         *sql.DB
-	TrialTable string
+	DB *sql.DB
 }
 
 // NewSQLStore returns a new *SQLStore
 // Specify scoreTable and trialTable or use "" for defaults
-func NewSQLStore(db *sql.DB, trialTable string) *SQLStore {
-	s := &SQLStore{
-		DB:         db,
-		TrialTable: "trials",
+func NewSQLStore(db *sql.DB) (*SQLStore, error) {
+	if db == nil {
+		return nil, ErrDBUninitialized
 	}
 
-	if trialTable != "" {
-		s.TrialTable = trialTable
-	}
-
-	return s
+	return &SQLStore{DB: db}, nil
 }
 
 var ErrDBUninitialized = errors.New("db not initialized")
@@ -46,16 +40,12 @@ var ErrTrialTable = errors.New("trial table name not specified")
 
 // Store score `s` to the database
 func (st *SQLStore) Store(s score.Score) error {
-	if err := st.CheckInit(); err != nil {
-		return err
-	}
-
 	tx, err := st.DB.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	query := fmt.Sprintf("INSERT INTO %s(action, value) values($1,$2)", st.TrialTable)
+	query := fmt.Sprintf("INSERT INTO %s(name, value) values($1,$2)", s.Type())
 	_, err = st.DB.Exec(query, s.Name(), s.Value())
 	if err != nil {
 		_ = tx.Rollback()
@@ -72,11 +62,7 @@ func (st *SQLStore) Store(s score.Score) error {
 // Retrieve Scores from the database by name
 // Use `database/sql` pattern rather than talking directly to driver.
 // This should allow for swapping out drivers.
-func (st *SQLStore) Retrieve() (map[string][]score.Score, error) {
-	if err := st.CheckInit(); err != nil {
-		return nil, err
-	}
-
+func (st *SQLStore) Retrieve(f score.ScoreFactory, scoreType string) (map[string][]score.Score, error) {
 	ret := map[string][]score.Score{}
 
 	/* typical database/sql pattern:
@@ -89,7 +75,7 @@ func (st *SQLStore) Retrieve() (map[string][]score.Score, error) {
 	- after looping, check for errors with rows.Err()
 	*/
 
-	query := fmt.Sprintf("SELECT action, value FROM %s", st.TrialTable)
+	query := fmt.Sprintf("SELECT name, value FROM %s", scoreType)
 	rows, err := st.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query scores: %w", err)
@@ -98,28 +84,26 @@ func (st *SQLStore) Retrieve() (map[string][]score.Score, error) {
 
 	for rows.Next() {
 		var (
-			action string
-			value  float64
+			name  string
+			value float64
 		)
-		if err := rows.Scan(&action, &value); err != nil {
+
+		if err := rows.Scan(&name, &value); err != nil {
 			return nil, fmt.Errorf("error scanning: %w", err)
 		}
-		ret[action] = append(ret[action], &score.Trial{Action: action, Time: value})
+
+		s, err := score.Create(f, scoreType)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create score: %v", err)
+		}
+
+		s.Set(name, value)
+		ret[name] = append(ret[name], s)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows err: %w", err)
 	}
 
 	return ret, nil
-}
-
-func (st *SQLStore) CheckInit() error {
-	switch {
-	case st.DB == nil:
-		return ErrDBUninitialized
-	case st.TrialTable == "":
-		return ErrTrialTable
-	default:
-		return nil
-	}
 }

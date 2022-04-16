@@ -11,6 +11,7 @@ import (
 )
 
 func TestAddActionErrors(t *testing.T) {
+	scoreType := "trial"
 	type testCase struct {
 		name   string
 		action string
@@ -66,7 +67,11 @@ func TestAddActionErrors(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		s, err := New(&store.MemoryStore{S: map[string][]score.Score{}})
+		store := &store.MemoryStore{S: map[string]map[string][]score.Score{}}
+		factory := score.ScoreFactory{
+			scoreType: func() score.Score { return &score.Trial{} },
+		}
+		s, err := New(store, factory)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -74,7 +79,7 @@ func TestAddActionErrors(t *testing.T) {
 		s.Start()
 		defer s.Stop()
 
-		err = s.AddAction(tc.action)
+		err = s.AddAction(scoreType, tc.action)
 		if expected, got := tc.err, err; expected != got {
 			t.Errorf("[%s] Expected error to be '%v' but got '%v'", tc.name, expected, got)
 		}
@@ -82,6 +87,7 @@ func TestAddActionErrors(t *testing.T) {
 }
 
 func TestGetStats(t *testing.T) {
+	scoreType := "trial"
 	type testCase struct {
 		name    string
 		actions []string
@@ -147,7 +153,11 @@ func TestGetStats(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		s, err := New(&store.MemoryStore{S: map[string][]score.Score{}})
+		store := &store.MemoryStore{S: map[string]map[string][]score.Score{}}
+		factory := score.ScoreFactory{
+			scoreType: func() score.Score { return &score.Trial{} },
+		}
+		s, err := New(store, factory)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -157,13 +167,13 @@ func TestGetStats(t *testing.T) {
 
 		for i, a := range tc.actions {
 			errs := make([]error, len(tc.actions))
-			errs[i] = s.AddAction(a)
+			errs[i] = s.AddAction(scoreType, a)
 			if expected, got := tc.errs[i], errs[i]; expected != got {
 				t.Errorf("[%s] Expected error for action %d to be '%v' but got '%v'", tc.name, i, expected, got)
 			}
 		}
 
-		stats, err := s.GetStats()
+		stats, err := s.GetStats(scoreType)
 		if expected, got := tc.err, err; expected != got {
 			t.Errorf("[%s] Expected GetStats err to be '%v' but got '%v'", tc.name, expected, got)
 		}
@@ -258,7 +268,12 @@ func TestStatsEquivalent(t *testing.T) {
 }
 
 func TestConcurrent(t *testing.T) {
-	s, err := New(&store.MemoryStore{S: map[string][]score.Score{}})
+	scoreType := "trial"
+	store := &store.MemoryStore{S: map[string]map[string][]score.Score{}}
+	factory := score.ScoreFactory{
+		scoreType: func() score.Score { return &score.Trial{} },
+	}
+	s, err := New(store, factory)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +302,7 @@ func TestConcurrent(t *testing.T) {
 	chaos := func(wg *sync.WaitGroup) {
 		defer wg.Done()
 		for _, a := range actions {
-			if err := s.AddAction(a); err != nil {
+			if err := s.AddAction(scoreType, a); err != nil {
 				t.Error(err)
 			}
 		}
@@ -304,7 +319,7 @@ func TestConcurrent(t *testing.T) {
 
 	e := `[{"action":"hop","avg":60.6},{"action":"skip","avg":61.2},{"action":"jump","avg":61.8}]`
 
-	res, err := s.GetStats()
+	res, err := s.GetStats(scoreType)
 	if expected, got := error(nil), err; expected != got {
 		t.Errorf("expected error '%v' but got '%v'", expected, got)
 	}
