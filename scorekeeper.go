@@ -3,6 +3,7 @@ package scorekeeper
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/bdharris08/scorekeeper/score"
 	"github.com/bdharris08/scorekeeper/stat"
@@ -13,6 +14,9 @@ import (
 // It is the top level object for the ScoreKeeper library.
 // It fulfills the requested AddAction and GetStats methods.
 type ScoreKeeper struct {
+	// factory for constructiong registered store types
+	f score.ScoreFactory
+	// scoreStore for storing scores in
 	s store.ScoreStore
 	// Scores chan will allow clients (through AddAction) to send scores to the worker.
 	// Constrain scores channel to only receive, ensuring only the worker reads.
@@ -20,21 +24,26 @@ type ScoreKeeper struct {
 	scores chan<- scoreEnvelope
 	// Requests chan will be used by clients (through GetStats) to request stats from the worker.
 	// Constrain requests channel to only receive, ensuring only the worker reads.
-	requests chan<- chan result
+	requests chan<- requestEnvelope
 	// close(exit) to stop the worker.
 	quit chan bool
 }
 
 // New creates and returns a ScoreKeeper with the provided ScoreStore.
 // It starts
-func New(st store.ScoreStore) (*ScoreKeeper, error) {
+func New(st store.ScoreStore, sf score.ScoreFactory) (*ScoreKeeper, error) {
 	sk := &ScoreKeeper{}
 
 	// default to memoryStore if none was provided
 	if st == nil {
-		st = &store.MemoryStore{S: map[string][]score.Score{}}
+		st = &store.MemoryStore{S: map[string]map[string][]score.Score{}}
 	}
 	sk.s = st
+
+	if sf == nil || len(sf) == 0 {
+		return nil, fmt.Errorf("scoreTypes must be provided")
+	}
+	sk.f = sf
 
 	return sk, nil
 }
@@ -68,10 +77,16 @@ type scoreEnvelope struct {
 	err   chan error
 }
 
+// requestEnvelope encapsulates a request for a type of score and a channel to receive the result
+type requestEnvelope struct {
+	scoreType string
+	r         chan result
+}
+
 // work on new scores sent from AddAction.
-func (sk *ScoreKeeper) work() (chan<- scoreEnvelope, chan<- chan result) {
+func (sk *ScoreKeeper) work() (chan<- scoreEnvelope, chan<- requestEnvelope) {
 	scores := make(chan scoreEnvelope)
-	requests := make(chan chan result)
+	requests := make(chan requestEnvelope)
 	go func() {
 		for {
 			select {
@@ -82,9 +97,9 @@ func (sk *ScoreKeeper) work() (chan<- scoreEnvelope, chan<- chan result) {
 				err := sk.s.Store(s.score)
 				s.err <- err
 
-			case r := <-requests:
-				res, err := sk.get()
-				r <- result{
+			case re := <-requests:
+				res, err := sk.get(re.scoreType)
+				re.r <- result{
 					result: res,
 					err:    err,
 				}
@@ -100,7 +115,7 @@ func (sk *ScoreKeeper) work() (chan<- scoreEnvelope, chan<- chan result) {
 var ErrNoKeeper = errors.New("scorekeeper uninitialized. Use New()")
 
 // AddAction takes a json-encoded string action and keeps it for later.
-func (sk *ScoreKeeper) AddAction(action string) error {
+func (sk *ScoreKeeper) AddAction(scoreType, action string) error {
 	if sk.s == nil {
 		return ErrNoKeeper
 	}
@@ -108,24 +123,27 @@ func (sk *ScoreKeeper) AddAction(action string) error {
 		return ErrNotRunning
 	}
 
-	var s score.Trial
+	s, err := score.Create(sk.f, scoreType)
+	if err != nil {
+		return fmt.Errorf("failed to AddAction of type %s: %w", scoreType, err)
+	}
 	if err := s.Read(action); err != nil {
 		return err
 	}
 
 	errCh := make(chan error)
 	sk.scores <- scoreEnvelope{
-		score: &s,
+		score: s,
 		err:   errCh,
 	}
-	err := <-errCh
+	err = <-errCh
 
 	return err
 }
 
 // GetStats computes some statistics about the actions stored in the ScoreKeeper.
 // It returns those statistics as a json-encoded string
-func (sk *ScoreKeeper) GetStats() (string, error) {
+func (sk *ScoreKeeper) GetStats(scoreType string) (string, error) {
 	if sk.s == nil {
 		return "", ErrNoKeeper
 	}
@@ -134,20 +152,23 @@ func (sk *ScoreKeeper) GetStats() (string, error) {
 	}
 
 	// pass a channel to the worker and wait for it to return the result
-	request := make(chan result)
-	sk.requests <- request
-	res := <-request
+	requestCh := make(chan result)
+	sk.requests <- requestEnvelope{
+		scoreType: scoreType,
+		r:         requestCh,
+	}
+	res := <-requestCh
 
 	return res.result, res.err
 }
 
 // get scores from the store and compute averages, returning a json-encoded string
-func (sk *ScoreKeeper) get() (string, error) {
+func (sk *ScoreKeeper) get(scoreType string) (string, error) {
 	if sk.s == nil {
-		return "", stat.ErrNoData
+		return "", store.ErrNoStore
 	}
 
-	scoreMap, err := sk.s.Retrieve()
+	scoreMap, err := sk.s.Retrieve(sk.f, scoreType)
 	if err != nil {
 		return "", err
 	}
