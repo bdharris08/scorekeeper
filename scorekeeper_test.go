@@ -327,3 +327,43 @@ func TestConcurrent(t *testing.T) {
 		t.Errorf("expected '%s' but got '%s'", expected, got)
 	}
 }
+
+func TestValidScoreType(t *testing.T) {
+	store := &store.MemoryStore{S: map[string]map[string][]score.Score{}}
+	factory := score.ScoreFactory{
+		"trial": nil,
+		"test":  nil,
+	}
+	s, err := New(store, factory)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type testCase struct {
+		scoreType string
+		expected  bool
+	}
+	testCases := []testCase{
+		{
+			scoreType: "trial",
+			expected:  true,
+		},
+		{
+			scoreType: "test",
+			expected:  true,
+		},
+		{
+			scoreType: "test; DROP TABLE test",
+			expected:  false,
+		},
+		{
+			scoreType: "",
+			expected:  false,
+		},
+	}
+	for _, tc := range testCases {
+		if expected, got := tc.expected, ValidScoreType(s, tc.scoreType); expected != got {
+			t.Errorf("expected %s to be valid==%t", tc.scoreType, expected)
+		}
+	}
+}

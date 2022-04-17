@@ -40,7 +40,7 @@ func New(st store.ScoreStore, sf score.ScoreFactory) (*ScoreKeeper, error) {
 	}
 	sk.s = st
 
-	if sf == nil || len(sf) == 0 {
+	if len(sf) == 0 {
 		return nil, fmt.Errorf("scoreTypes must be provided")
 	}
 	sk.f = sf
@@ -63,6 +63,12 @@ func (sk *ScoreKeeper) Stop() error {
 		return nil
 	}
 	return ErrNotRunning
+}
+
+// ValidScoreType checks for the presence of scoreType in the score factory
+func ValidScoreType(sk *ScoreKeeper, scoreType string) bool {
+	_, ok := sk.f[scoreType]
+	return ok
 }
 
 // result stats from the scorekeeper, or an error
@@ -122,6 +128,9 @@ func (sk *ScoreKeeper) AddAction(scoreType, action string) error {
 	if sk.scores == nil || sk.quit == nil {
 		return ErrNotRunning
 	}
+	if valid := ValidScoreType(sk, scoreType); !valid {
+		return score.ErrBadScoreType
+	}
 
 	s, err := score.Create(sk.f, scoreType)
 	if err != nil {
@@ -149,6 +158,9 @@ func (sk *ScoreKeeper) GetStats(scoreType string) (string, error) {
 	}
 	if sk.scores == nil || sk.quit == nil {
 		return "", ErrNotRunning
+	}
+	if valid := ValidScoreType(sk, scoreType); !valid {
+		return "", score.ErrBadScoreType
 	}
 
 	// pass a channel to the worker and wait for it to return the result
