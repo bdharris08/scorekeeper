@@ -25,11 +25,12 @@ type AverageTime struct {
 }
 
 var (
-	ErrNoInput   = errors.New("no input provided")
-	ErrBadTime   = errors.New("invalid time")
-	ErrNoTime    = errors.New("missing time")
-	ErrBadAction = errors.New("invalid action")
-	ErrBadInput  = errors.New("bad input")
+	ErrNoInput      = errors.New("no input provided")
+	ErrBadTime      = errors.New("invalid time")
+	ErrNoTime       = errors.New("missing time")
+	ErrBadScoreType = errors.New("invalid ScoreType")
+	ErrBadAction    = errors.New("invalid action")
+	ErrBadInput     = errors.New("bad input")
 )
 
 func NewTrial() Score {
